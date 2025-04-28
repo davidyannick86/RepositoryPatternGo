@@ -116,6 +116,44 @@ func TestSqlLiteRepository_GetAllUsers(t *testing.T) {
 	}
 }
 
+func TestSqlLiteRepository_GetAllUsers_Error(t *testing.T) {
+	// Setup
+	ctx := context.Background()
+	repo, cleanup := setupSQLiteRepository(t)
+
+	// Force an error by closing the database connection before calling GetAllUsers
+	cleanup() // This closes the database connection
+
+	// Execute - this should fail because the connection is closed
+	users, err := repo.GetAllUsers(ctx)
+
+	// Verify we get an error
+	assert.Error(t, err, "Should return an error when database connection is closed")
+	assert.Nil(t, users, "Should not return users when there's an error")
+}
+
+func TestSqlLiteRepository_AddUser_Error(t *testing.T) {
+	// Setup
+	ctx := context.Background()
+	repo, cleanup := setupSQLiteRepository(t)
+
+	// Test data
+	user := domain.User{
+		Name:  "Error Test User",
+		Email: "error@example.com",
+	}
+
+	// Force an error by closing the database connection before calling AddUser
+	cleanup() // This closes the database connection
+
+	// Execute - this should fail because the connection is closed
+	result, err := repo.AddUser(ctx, user)
+
+	// Verify we get an error
+	assert.Error(t, err, "Should return an error when database connection is closed")
+	assert.Nil(t, result, "Should not return a user when there's an error")
+}
+
 func TestSqlLiteRepository_Integration(t *testing.T) {
 	// Setup
 	ctx := context.Background()

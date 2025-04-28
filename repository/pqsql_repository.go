@@ -29,6 +29,7 @@ func NewPsqlRepository(pool *pgxpool.Pool) UserRepository {
 }
 
 func (r *psqlRepository) AddUser(ctx context.Context, user domain.User) (*domain.User, error) {
+
 	user.ID = uuid.New()
 
 	_, err := r.pool.Exec(ctx, insertUserQuery, user.ID, user.Name, user.Email)

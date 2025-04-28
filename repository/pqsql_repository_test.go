@@ -154,6 +154,50 @@ func TestPsqlRepository_GetAllUsers(t *testing.T) {
 	}
 }
 
+func TestPsqlRepository_GetAllUsers_Error(t *testing.T) {
+	// Setup
+	ctx := context.Background()
+	container, containerCleanup := setupPostgresContainer(t)
+	defer containerCleanup()
+
+	repo, repoCleanup := setupRepository(t, container)
+
+	// Force an error by closing the connection pool before calling GetAllUsers
+	repoCleanup() // This will close the pool
+
+	// Execute - this should fail because the connection is closed
+	users, err := repo.GetAllUsers(ctx)
+
+	// Verify we get an error
+	assert.Error(t, err, "Should return an error when database connection is closed")
+	assert.Nil(t, users, "Should not return users when there's an error")
+}
+
+func TestPsqlRepository_AddUser_Error(t *testing.T) {
+	// Setup
+	ctx := context.Background()
+	container, containerCleanup := setupPostgresContainer(t)
+	defer containerCleanup()
+
+	repo, repoCleanup := setupRepository(t, container)
+
+	// Test data
+	user := domain.User{
+		Name:  "Error Test User",
+		Email: "error@example.com",
+	}
+
+	// Force an error by closing the connection pool before calling AddUser
+	repoCleanup() // This will close the pool
+
+	// Execute - this should fail because the connection is closed
+	result, err := repo.AddUser(ctx, user)
+
+	// Verify we get an error
+	assert.Error(t, err, "Should return an error when database connection is closed")
+	assert.Nil(t, result, "Should not return a user when there's an error")
+}
+
 func TestPsqlRepository_Integration(t *testing.T) {
 	// Setup
 	ctx := context.Background()
