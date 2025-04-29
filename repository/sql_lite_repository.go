@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"time"
+	"fmt"
 
 	"github.com/davidyannick/repository-pattern/domain"
 	"github.com/google/uuid"
@@ -24,37 +24,44 @@ const (
 `
 )
 
-type sqlliteRepository struct {
+// SqlliteRepository provides methods for user data operations using SQLite.
+type SqlliteRepository struct {
 	db *sql.DB
 }
 
-func NewSqlLiteRepository(db *sql.DB) UserRepository {
-	return &sqlliteRepository{db: db}
+// NewSQLLiteRepository creates a new SQLite repository for user data.
+func NewSQLLiteRepository(db *sql.DB) *SqlliteRepository {
+	return &SqlliteRepository{db: db}
 }
 
-func (r *sqlliteRepository) AddUser(ctx context.Context, user domain.User) (*domain.User, error) {
+// AddUser adds a new user to the SQLite database and returns the created user.
+func (r *SqlliteRepository) AddUser(ctx context.Context, user domain.User) (*domain.User, error) {
 	user.ID = uuid.New()
-
-	_, err := r.db.ExecContext(ctx, insertUserQuery2, user.ID, user.Name, user.Email, time.Now(), time.Now())
+	_, err := r.db.ExecContext(ctx, insertUserQuery2, user.ID, user.Name, user.Email)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to add user: %w", err)
 	}
 	return &user, nil
 }
 
-func (r *sqlliteRepository) GetAllUsers(ctx context.Context) ([]domain.User, error) {
-	var users []domain.User
+// GetAllUsers retrieves all users from the SQLite database.
+func (r *SqlliteRepository) GetAllUsers(ctx context.Context) ([]domain.User, error) {
+	// Preallocate users slice with a reasonable capacity (e.g., 10)
+	users := make([]domain.User, 0, 10)
 	rows, err := r.db.QueryContext(ctx, selectAllUsersQuery2)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to query all users: %w", err)
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var user domain.User
 		if err := rows.Scan(&user.ID, &user.Name, &user.Email); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to scan user row: %w", err)
 		}
 		users = append(users, user)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration error: %w", err)
 	}
 	return users, nil
 }

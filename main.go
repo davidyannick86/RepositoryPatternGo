@@ -14,45 +14,11 @@ import (
 	service "github.com/davidyannick/repository-pattern/services"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/mattn/go-sqlite3"
-	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 func main() {
 	postGreSql()
 	sqlLite()
-	mongoDb()
-}
-
-func mongoDb() {
-	dsn := "mongodb://localhost:27017"
-	client, err := mongo.Connect(options.Client().ApplyURI(dsn))
-	if err != nil {
-		log.Fatalf("Unable to connect to MongoDB: %v", err)
-	}
-
-	repo := repository.NewMongoDBRepository(client)
-	ctx := context.Background()
-
-	service := service.NewUserService(repo)
-
-	user := domain.User{
-		Name:  generateRandomName(),
-		Email: generateRandomEmail(),
-	}
-
-	addedUser, err := service.AddUser(ctx, user)
-	if err != nil {
-		log.Fatalf("Error adding user: %v", err)
-	}
-	log.Printf("Added user: %v", *addedUser)
-
-	users, err := service.GetAllUsers(ctx)
-	if err != nil {
-		log.Fatalf("Error getting users: %v", err)
-	}
-	log.Printf("All users: %v", users)
-	log.Printf("Total users: %d", len(users))
 }
 
 func postGreSql() {
@@ -84,7 +50,6 @@ func postGreSql() {
 	}
 	log.Printf("All users: %v", users)
 	log.Printf("Total users: %d", len(users))
-
 }
 
 func sqlLite() {
@@ -105,7 +70,7 @@ func sqlLite() {
 		log.Fatalf("création schema : %v", err)
 	}
 
-	repo := repository.NewSqlLiteRepository(db)
+	repo := repository.NewSQLLiteRepository(db)
 	ctx := context.Background()
 
 	service := service.NewUserService(repo)

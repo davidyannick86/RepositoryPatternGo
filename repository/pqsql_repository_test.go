@@ -1,7 +1,6 @@
-package repository
+package repository_test
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +8,7 @@ import (
 	"time"
 
 	"github.com/davidyannick/repository-pattern/domain"
+	"github.com/davidyannick/repository-pattern/repository"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
@@ -18,8 +18,9 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func setupPostgresContainer(t *testing.T) (*postgres.PostgresContainer, func()) {
-	ctx := context.Background()
+func setupPostgresContainer(t *testing.T) (container *postgres.PostgresContainer, cleanup func()) {
+	t.Helper()
+	ctx := t.Context()
 
 	// Get the absolute path to init.sql
 	workDir, err := os.Getwd()
@@ -29,7 +30,7 @@ func setupPostgresContainer(t *testing.T) (*postgres.PostgresContainer, func()) 
 	initScriptPath := filepath.Join(rootDir, "init.sql")
 
 	// Create and start the PostgreSQL container with increased timeout
-	container, err := postgres.Run(ctx,
+	container, err = postgres.Run(ctx,
 		"postgres:latest",
 		postgres.WithInitScripts(initScriptPath),
 		postgres.WithDatabase("testdb"),
@@ -43,7 +44,7 @@ func setupPostgresContainer(t *testing.T) (*postgres.PostgresContainer, func()) 
 
 	require.NoError(t, err)
 
-	cleanup := func() {
+	cleanup = func() {
 		if err := container.Terminate(ctx); err != nil {
 			t.Fatalf("failed to terminate container: %s", err)
 		}
@@ -52,8 +53,9 @@ func setupPostgresContainer(t *testing.T) (*postgres.PostgresContainer, func()) 
 	return container, cleanup
 }
 
-func setupRepository(t *testing.T, container *postgres.PostgresContainer) (UserRepository, func()) {
-	ctx := context.Background()
+func setupRepository(t *testing.T, container *postgres.PostgresContainer) (repo repository.PsqlRepository, cleanup func()) {
+	t.Helper()
+	ctx := t.Context()
 
 	// Get connection details
 	connString, err := container.ConnectionString(ctx)
@@ -64,9 +66,9 @@ func setupRepository(t *testing.T, container *postgres.PostgresContainer) (UserR
 	require.NoError(t, err)
 
 	// Create repository
-	repo := NewPsqlRepository(pool)
+	repo = *repository.NewPsqlRepository(pool)
 
-	cleanup := func() {
+	cleanup = func() {
 		pool.Close()
 	}
 
@@ -75,7 +77,7 @@ func setupRepository(t *testing.T, container *postgres.PostgresContainer) (UserR
 
 func TestPsqlRepository_AddUser(t *testing.T) {
 	// Setup
-	ctx := context.Background()
+	ctx := t.Context()
 	container, containerCleanup := setupPostgresContainer(t)
 	defer containerCleanup()
 
@@ -115,7 +117,7 @@ func TestPsqlRepository_AddUser(t *testing.T) {
 
 func TestPsqlRepository_GetAllUsers(t *testing.T) {
 	// Setup
-	ctx := context.Background()
+	ctx := t.Context()
 	container, containerCleanup := setupPostgresContainer(t)
 	defer containerCleanup()
 
@@ -156,7 +158,7 @@ func TestPsqlRepository_GetAllUsers(t *testing.T) {
 
 func TestPsqlRepository_GetAllUsers_Error(t *testing.T) {
 	// Setup
-	ctx := context.Background()
+	ctx := t.Context()
 	container, containerCleanup := setupPostgresContainer(t)
 	defer containerCleanup()
 
@@ -175,7 +177,7 @@ func TestPsqlRepository_GetAllUsers_Error(t *testing.T) {
 
 func TestPsqlRepository_AddUser_Error(t *testing.T) {
 	// Setup
-	ctx := context.Background()
+	ctx := t.Context()
 	container, containerCleanup := setupPostgresContainer(t)
 	defer containerCleanup()
 
@@ -200,7 +202,7 @@ func TestPsqlRepository_AddUser_Error(t *testing.T) {
 
 func TestPsqlRepository_Integration(t *testing.T) {
 	// Setup
-	ctx := context.Background()
+	ctx := t.Context()
 	container, containerCleanup := setupPostgresContainer(t)
 	defer containerCleanup()
 

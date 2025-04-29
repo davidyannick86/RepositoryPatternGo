@@ -1,18 +1,19 @@
-package repository
+package repository_test
 
 import (
-	"context"
 	"database/sql"
 	"testing"
 
 	"github.com/davidyannick/repository-pattern/domain"
+	"github.com/davidyannick/repository-pattern/repository"
 	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func setupSQLiteDatabase(t *testing.T) (*sql.DB, func()) {
+func setupSQLiteDatabase(t *testing.T) (db *sql.DB, cleanup func()) {
+	t.Helper()
 	// Création d'une base de données SQLite en mémoire pour les tests
 	db, err := sql.Open("sqlite3", ":memory:")
 	require.NoError(t, err)
@@ -27,25 +28,26 @@ func setupSQLiteDatabase(t *testing.T) (*sql.DB, func()) {
 	_, err = db.Exec(schema)
 	require.NoError(t, err)
 
-	cleanup := func() {
+	cleanup = func() {
 		db.Close()
 	}
 
 	return db, cleanup
 }
 
-func setupSQLiteRepository(t *testing.T) (UserRepository, func()) {
+func setupSQLiteRepository(t *testing.T) (repo repository.SqlliteRepository, cleanup func()) {
+	t.Helper()
 	db, dbCleanup := setupSQLiteDatabase(t)
 
 	// Création du repository
-	repo := NewSqlLiteRepository(db)
+	repo = *repository.NewSQLLiteRepository(db)
 
 	return repo, dbCleanup
 }
 
 func TestSqlLiteRepository_AddUser(t *testing.T) {
 	// Setup
-	ctx := context.Background()
+	ctx := t.Context()
 	repo, cleanup := setupSQLiteRepository(t)
 	defer cleanup()
 
@@ -82,7 +84,7 @@ func TestSqlLiteRepository_AddUser(t *testing.T) {
 
 func TestSqlLiteRepository_GetAllUsers(t *testing.T) {
 	// Setup
-	ctx := context.Background()
+	ctx := t.Context()
 	repo, cleanup := setupSQLiteRepository(t)
 	defer cleanup()
 
@@ -118,7 +120,7 @@ func TestSqlLiteRepository_GetAllUsers(t *testing.T) {
 
 func TestSqlLiteRepository_GetAllUsers_Error(t *testing.T) {
 	// Setup
-	ctx := context.Background()
+	ctx := t.Context()
 	repo, cleanup := setupSQLiteRepository(t)
 
 	// Force an error by closing the database connection before calling GetAllUsers
@@ -134,7 +136,7 @@ func TestSqlLiteRepository_GetAllUsers_Error(t *testing.T) {
 
 func TestSqlLiteRepository_AddUser_Error(t *testing.T) {
 	// Setup
-	ctx := context.Background()
+	ctx := t.Context()
 	repo, cleanup := setupSQLiteRepository(t)
 
 	// Test data
@@ -156,7 +158,7 @@ func TestSqlLiteRepository_AddUser_Error(t *testing.T) {
 
 func TestSqlLiteRepository_Integration(t *testing.T) {
 	// Setup
-	ctx := context.Background()
+	ctx := t.Context()
 	repo, cleanup := setupSQLiteRepository(t)
 	defer cleanup()
 
@@ -173,7 +175,7 @@ func TestSqlLiteRepository_Integration(t *testing.T) {
 	}
 
 	for _, user := range initialTestUsers {
-		_, err := repo.AddUser(ctx, user)
+		_, err = repo.AddUser(ctx, user)
 		require.NoError(t, err)
 	}
 

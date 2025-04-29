@@ -1,7 +1,6 @@
 package service_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/davidyannick/repository-pattern/domain"
@@ -25,7 +24,7 @@ func TestGetAll(t *testing.T) {
 
 	userService := service.NewUserService(mockRepo)
 
-	users, err := userService.GetAllUsers(context.Background())
+	users, err := userService.GetAllUsers(t.Context())
 
 	require.NoError(t, err)
 	require.Len(t, users, 2)
@@ -41,7 +40,7 @@ func TestAddUser(t *testing.T) {
 
 	userService := service.NewUserService(mockRepo)
 
-	userAdded, err := userService.AddUser(context.Background(), user)
+	userAdded, err := userService.AddUser(t.Context(), user)
 	require.NoError(t, err)
 	require.Equal(t, userAdded.Name, user.Name)
 	require.Equal(t, userAdded.Email, user.Email)
