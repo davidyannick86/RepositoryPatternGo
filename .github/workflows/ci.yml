@@ -35,3 +35,21 @@ jobs:
 
       - name: Run lint task
         run: golangci-lint run --config="$HOME/.golangci.yaml"
+
+  test:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24.x'
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: go test ./... -timeout 120s
